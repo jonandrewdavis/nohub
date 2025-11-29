@@ -34,14 +34,16 @@ const app = new Hono<{
 }>();
 
 // Home route with available endpoints
-app.get("/", (c) => {
-  return c.text(
-    "Available endpoints:\n" +
-      "GET /container/<ID> - Start a container for each ID with a 2m timeout\n" +
-      "GET /lb - Load balance requests over multiple containers\n" +
-      "GET /error - Start a container that errors (demonstrates error handling)\n" +
-      "GET /singleton - Get a single specific container instance"
-  );
+app.get("/", async (c) => {
+  const container = c.env.NOHUB_CONTAINER.get(containerId);
+  return await container.fetch(c.req.raw);
+  // return c.text(
+  //   "Available endpoints:\n" +
+  //     "GET /container/<ID> - Start a container for each ID with a 2m timeout\n" +
+  //     "GET /lb - Load balance requests over multiple containers\n" +
+  //     "GET /error - Start a container that errors (demonstrates error handling)\n" +
+  //     "GET /singleton - Get a single specific container instance"
+  // );
 });
 
 // Route requests to a specific container using the container ID

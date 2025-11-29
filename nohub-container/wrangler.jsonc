@@ -27,9 +27,9 @@
    * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
    */
   "vars": {
-    "NOHUB_GAMES": "friendgem Friend Gem",
-    "NOHUB_METRICS_HOST": "10.0.0.1",
-    "NOHUB_TCP_HOST": "10.0.0.1",
+    "NOHUB_GAMES": "friendgem FriendGem",
+    "NOHUB_METRICS_HOST": "*",
+    "NOHUB_TCP_HOST": "*",
     "NOHUB_METRICS_ENABLED": "false"
   },
   /**
