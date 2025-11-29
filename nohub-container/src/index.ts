@@ -3,9 +3,9 @@ import { Hono } from "hono";
 
 export class NohubContainer extends Container<Env> {
   // Port the container listens on (default: 8080)
-  defaultPort = 8080;
+  defaultPort = 9980;
   // Time before container sleeps due to inactivity (default: 30s)
-  sleepAfter = "2m";
+  sleepAfter = "10m";
   // Environment variables passed to the container
   envVars = {
     MESSAGE: "I was passed in via the container class!",
