@@ -35,6 +35,7 @@ const app = new Hono<{
 
 // Home route with available endpoints
 app.get("/", async (c) => {
+  const containerId = c.env.NOHUB_CONTAINER.idFromName(`/container/1`);
   const container = c.env.NOHUB_CONTAINER.get(containerId);
   return await container.fetch(c.req.raw);
   // return c.text(
