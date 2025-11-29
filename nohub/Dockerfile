@@ -33,4 +33,3 @@ COPY --from=prerelease /usr/src/foxssake/nohub/src src
 USER bun
 EXPOSE 9980/tcp
 ENTRYPOINT [ "bun", "." ]
-
