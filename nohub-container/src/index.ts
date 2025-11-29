@@ -8,7 +8,10 @@ export class NohubContainer extends Container<Env> {
   sleepAfter = "10m";
   // Environment variables passed to the container
   envVars = {
-    MESSAGE: "I was passed in via the container class!",
+    NOHUB_GAMES: this.env.NOHUB_GAMES,
+    NOHUB_TCP_HOST: this.env.NOHUB_TCP_HOST,
+    NOHUB_METRICS_HOST: this.env.NOHUB_METRICS_HOST,
+    NOHUB_METRICS_ENABLED: this.env.NOHUB_METRICS_ENABLED,
   };
 
   // Optional lifecycle hooks

@@ -28,8 +28,9 @@
    */
   "vars": {
     "NOHUB_GAMES": "friendgem Friend Gem",
+    "NOHUB_METRICS_HOST": "10.0.0.1",
     "NOHUB_TCP_HOST": "10.0.0.1",
-    "NOHUB_METRICS_ENABLED": false
+    "NOHUB_METRICS_ENABLED": "false"
   },
   /**
    * Note: Use secrets to store sensitive data.
