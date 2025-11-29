@@ -28,8 +28,8 @@
    */
   "vars": {
     "NOHUB_GAMES": "friendgem FriendGem",
-    "NOHUB_METRICS_HOST": "*",
-    "NOHUB_TCP_HOST": "*",
+    "NOHUB_METRICS_HOST": "0.0.0.0",
+    "NOHUB_TCP_HOST": "0.0.0.0",
     "NOHUB_METRICS_ENABLED": "false"
   },
   /**
