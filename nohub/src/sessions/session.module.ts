@@ -4,7 +4,7 @@ import type { GameLookup } from "@src/games/game.repository";
 import type { LobbyLookup } from "@src/lobbies/lobby.repository";
 import type { MetricsHolder } from "@src/metrics/metrics";
 import type { Module } from "@src/module";
-import type { NohubReactor } from "@src/nohub";
+import type { Nohub, NohubReactor } from "@src/nohub";
 import { requireRequest, requireSingleParam } from "@src/validators";
 import type { SessionData } from "./session";
 import { SessionApi, sessionOf } from "./session.api";
@@ -19,7 +19,7 @@ export class SessionModule implements Module {
     private gameLookup: GameLookup,
     private eventBus: NohubEventBus,
     private config: SessionsConfig,
-    private metrics: MetricsHolder,
+    private metrics: MetricsHolder
   ) {
     this.sessionRepository = new SessionRepository();
 
@@ -29,7 +29,7 @@ export class SessionModule implements Module {
       this.gameLookup,
       this.eventBus,
       this.config,
-      this.metrics,
+      this.metrics
     );
   }
 
@@ -52,6 +52,12 @@ export class SessionModule implements Module {
       });
   }
 
+  attachTo(app: Nohub): void {
+    app.modules.eventBus.on("send-message", (sessionId) => {
+      this.sessionApi.sendMessage(sessionId);
+    });
+  }
+
   openSocket(socket: Bun.Socket<SessionData>): void {
     this.sessionApi.openSession(socket);
   }
@@ -59,4 +65,6 @@ export class SessionModule implements Module {
   closeSocket(socket: Bun.Socket<SessionData>): void {
     this.sessionApi.closeSession(socket);
   }
+
+  sendMessage(message: string);
 }

@@ -18,10 +18,7 @@ export class LobbyModule implements Module {
   readonly lobbyService: LobbyService;
   readonly lobbyApi: LobbyApi;
 
-  constructor(
-    private config: LobbiesConfig,
-    metrics: MetricsHolder,
-  ) {
+  constructor(private config: LobbiesConfig, metrics: MetricsHolder) {
     this.eventBus = new LobbyEventBus();
     new LobbyMetricsReporter(this.eventBus, metrics);
     this.lobbyRepository = new LobbyRepository();
@@ -29,12 +26,12 @@ export class LobbyModule implements Module {
     this.lobbyService = new LobbyService(
       this.lobbyRepository,
       this.config,
-      this.eventBus,
+      this.eventBus
     );
     this.lobbyApi = new LobbyApi(
       this.lobbyRepository,
       this.lobbyService,
-      metrics,
+      metrics
     );
   }
 
@@ -128,6 +125,20 @@ export class LobbyModule implements Module {
         const session = sessionOf(xchg);
 
         this.lobbyApi.publish(lobbyId, session);
+        xchg.reply({ text: "ok" });
+      })
+      .on("lobby/start", (cmd, xchg) => {
+        const lobbyId = requireSingleParam(cmd, "Missing lobby ID!");
+        const session = sessionOf(xchg);
+
+        this.lobbyApi.start(lobbyId, session);
+        xchg.reply({ text: "ok" });
+      })
+      .on("lobby/leave", (cmd, xchg) => {
+        const lobbyId = requireSingleParam(cmd, "Missing lobby ID!");
+        const session = sessionOf(xchg);
+
+        this.lobbyApi.leave(lobbyId, session);
         xchg.reply({ text: "ok" });
       });
   }

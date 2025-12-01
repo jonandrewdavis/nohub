@@ -17,17 +17,17 @@ export class LobbyService {
   constructor(
     private repository: LobbyRepository,
     private config: LobbiesConfig,
-    private eventBus: LobbyEventBus,
+    private eventBus: LobbyEventBus
   ) {}
 
   create(
     address: string,
     data: Map<string, string>,
-    session: SessionData,
+    session: SessionData
   ): Lobby {
     this.logger.info(
       { data: Object.fromEntries(data.entries()), address },
-      "Creating lobby with custom data",
+      "Creating lobby with custom data"
     );
 
     if (session.gameId === undefined && !this.config.enableGameless)
@@ -38,7 +38,7 @@ export class LobbyService {
       this.repository.count() >= this.config.maxCount
     )
       throw new LimitError(
-        `Can't host more than ${this.config.maxCount} active lobbies on this instance!`,
+        `Can't host more than ${this.config.maxCount} active lobbies on this instance!`
       );
 
     if (
@@ -46,7 +46,7 @@ export class LobbyService {
       this.repository.countBySession(session.id) >= this.config.maxPerSession
     )
       throw new LimitError(
-        `Session can't have more than ${this.config.maxPerSession} active lobbies!`,
+        `Session can't have more than ${this.config.maxPerSession} active lobbies!`
       );
 
     if (
@@ -54,7 +54,7 @@ export class LobbyService {
       data.size > this.config.maxDataEntries
     )
       throw new LimitError(
-        `Lobbies can't have more than ${this.config.maxDataEntries} data entries!`,
+        `Lobbies can't have more than ${this.config.maxDataEntries} data entries!`
       );
 
     const lobby: Lobby = {
@@ -64,6 +64,7 @@ export class LobbyService {
       owner: session.id,
       isVisible: true,
       isLocked: false,
+      sessions: new Map([[session.id, session]]),
       data,
     };
 
@@ -74,7 +75,7 @@ export class LobbyService {
       { session, lobby },
       "Lobby#%s created, bound to session#%s",
       lobby.id,
-      session.id,
+      session.id
     );
     return lobby;
   }
@@ -87,13 +88,24 @@ export class LobbyService {
 
   join(lobby: Lobby, session: SessionData): string {
     requireLobbyJoinable(lobby, session);
-    return lobby.address;
+    lobby.sessions.set(session.id, session);
+
+    this.repository.update(lobby);
+    return [...lobby.sessions.keys()].join(", ");
+  }
+
+  leave(lobby: Lobby, session: SessionData): string {
+    // requireLobbyJoinable(lobby, session); NO CHECKS on leaving
+    lobby.sessions.delete(session.id);
+    this.repository.update(lobby);
+
+    return [...lobby.sessions.keys()].join(", ");
   }
 
   setData(
     lobby: Lobby,
     data: Map<string, string>,
-    session: SessionData,
+    session: SessionData
   ): Lobby {
     requireLobbyModifiableIn(lobby, session);
 
@@ -102,7 +114,7 @@ export class LobbyService {
       data.size > this.config.maxDataEntries
     )
       throw new LimitError(
-        `Lobbies can't have more than ${this.config.maxDataEntries} data entries!`,
+        `Lobbies can't have more than ${this.config.maxDataEntries} data entries!`
       );
 
     const updated = { ...lobby, data };
@@ -144,6 +156,21 @@ export class LobbyService {
     this.repository.update(result);
     this.eventBus.emit("lobby-change", lobby, result);
     return result;
+  }
+
+  // NOTE: Kickoff
+  start(lobby: Lobby, session: SessionData): Lobby {
+    requireLobbyModifiableIn(lobby, session);
+
+    for (let current_session of lobby.sessions) {
+      // curr
+      console.log("CURR SES", current_session);
+    }
+
+    // const result: Lobby = { ...lobby, isVisible: false };
+    // this.repository.update(result);
+    // this.eventBus.emit("lobby-change", lobby, result);
+    return lobby;
   }
 
   private generateId(): string {

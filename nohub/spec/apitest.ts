@@ -105,10 +105,7 @@ export class ApiTest {
 }
 
 export class TrimsockClient<T> {
-  constructor(
-    private reactor: Reactor<T>,
-    private serverTarget: T,
-  ) {}
+  constructor(private reactor: Reactor<T>, private serverTarget: T) {}
 
   send(command: CommandSpec): Exchange<T> {
     return this.reactor.send(this.serverTarget, command);
@@ -132,7 +129,7 @@ export class TrimsockClient<T> {
 
   async createLobby(
     address: string,
-    data?: Map<string, string>,
+    data?: Map<string, string>
   ): Promise<Lobby> {
     const xchg = this.reactor.send(this.serverTarget, {
       name: "lobby/create",
@@ -164,8 +161,8 @@ export class TrimsockClient<T> {
         id: chunk.params?.at(0) ?? chunk.text ?? "",
         isLocked: chunk.params?.includes("locked") === true,
         isVisible: chunk.params?.includes("hidden") !== true,
-
         data: new Map(),
+        sessions: new Map(),
         address: "",
         owner: "",
       });

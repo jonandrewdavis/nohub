@@ -20,7 +20,7 @@ export class SessionApi {
     private gameLookup: GameLookup,
     private eventBus: NohubEventBus,
     private config: SessionsConfig,
-    private metrics: MetricsHolder = emptyMetrics,
+    private metrics: MetricsHolder = emptyMetrics
   ) {}
 
   generateSessionId(): string {
@@ -32,7 +32,7 @@ export class SessionApi {
     this.logger.info(
       { address },
       "Opening new session for connection from %s",
-      address,
+      address
     );
 
     if (
@@ -40,7 +40,7 @@ export class SessionApi {
       this.sessionRepository.count() >= this.config.maxCount
     )
       throw new LimitError(
-        `Can't have more than ${this.config.maxCount} active sessions!`,
+        `Can't have more than ${this.config.maxCount} active sessions!`
       );
     if (
       this.config.maxPerAddress > 0 &&
@@ -48,7 +48,7 @@ export class SessionApi {
         this.config.maxPerAddress
     )
       throw new LimitError(
-        `Can't have more than ${this.config.maxPerAddress} active sessions per address!`,
+        `Can't have more than ${this.config.maxPerAddress} active sessions per address!`
       );
 
     const session = {
@@ -64,12 +64,13 @@ export class SessionApi {
     this.logger.info({ session }, "Created session #%s", session.id);
   }
 
+  // TODO: When closing a session, remove session from lobby
   closeSession(socket: Socket<SessionData>): void {
     const sessionId = socket.data.id;
     this.logger.info(
       { session: socket.data },
       "Closing session #%s",
-      sessionId,
+      sessionId
     );
 
     this.eventBus.emit("session-close", sessionId);
@@ -83,7 +84,7 @@ export class SessionApi {
     this.logger.info(
       { session, gameId },
       "Switching game for session #%s",
-      session.id,
+      session.id
     );
 
     // Check if operation is possible
@@ -104,7 +105,7 @@ export class SessionApi {
 }
 
 export function sessionOf(
-  exchange: Exchange<Socket<SessionData>>,
+  exchange: Exchange<Socket<SessionData>>
 ): SessionData {
   return exchange.source.data;
 }
