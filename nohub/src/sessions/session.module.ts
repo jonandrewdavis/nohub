@@ -52,12 +52,6 @@ export class SessionModule implements Module {
       });
   }
 
-  attachTo(app: Nohub): void {
-    app.modules.eventBus.on("send-message", (sessionId) => {
-      this.sessionApi.sendMessage(sessionId);
-    });
-  }
-
   openSocket(socket: Bun.Socket<SessionData>): void {
     this.sessionApi.openSession(socket);
   }
@@ -65,6 +59,4 @@ export class SessionModule implements Module {
   closeSocket(socket: Bun.Socket<SessionData>): void {
     this.sessionApi.closeSession(socket);
   }
-
-  sendMessage(message: string);
 }
