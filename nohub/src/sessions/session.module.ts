@@ -4,7 +4,7 @@ import type { GameLookup } from "@src/games/game.repository";
 import type { LobbyLookup } from "@src/lobbies/lobby.repository";
 import type { MetricsHolder } from "@src/metrics/metrics";
 import type { Module } from "@src/module";
-import type { NohubReactor } from "@src/nohub";
+import type { Nohub, NohubReactor } from "@src/nohub";
 import { requireRequest, requireSingleParam } from "@src/validators";
 import type { SessionData } from "./session";
 import { SessionApi, sessionOf } from "./session.api";
@@ -19,7 +19,7 @@ export class SessionModule implements Module {
     private gameLookup: GameLookup,
     private eventBus: NohubEventBus,
     private config: SessionsConfig,
-    private metrics: MetricsHolder,
+    private metrics: MetricsHolder
   ) {
     this.sessionRepository = new SessionRepository();
 
@@ -29,7 +29,7 @@ export class SessionModule implements Module {
       this.gameLookup,
       this.eventBus,
       this.config,
-      this.metrics,
+      this.metrics
     );
   }
 
@@ -49,6 +49,17 @@ export class SessionModule implements Module {
           name: "youarehere",
           params: [xchg.source.remoteAddress],
         });
+      })
+      .on("getid", (_cmd, xchg) => {
+        xchg.reply({ text: xchg.source.data.id });
+      })
+      .on("lobby/offer", (cmd, xchg) => {
+        requireRequest(cmd);
+        const address = requireSingleParam(cmd, "Missing peer id address!");
+        const data: Map<string, string> = cmd.kvMap ?? new Map();
+        const session = sessionOf(xchg);
+
+        xchg.reply(lobbyToCommand(lobby));
       });
   }
 

@@ -1,6 +1,7 @@
 import type { CommandSpec } from "@foxssake/trimsock-js";
 import { LockedError, UnauthorizedError } from "@src/errors";
 import type { SessionData } from "@src/sessions/session";
+import { LobbyModule } from "../lobbies/lobby.module";
 
 export interface Lobby {
   id: string;
@@ -9,18 +10,18 @@ export interface Lobby {
   address: string;
   isVisible: boolean;
   isLocked: boolean;
+  sessions: Map<string, SessionData>;
   data: Map<string, string>;
 }
 
 export function requireLobbyModifiableIn(
   lobby: Lobby,
   session: SessionData,
-  message?: string,
+  message?: string
 ) {
   if (lobby.owner !== session.id)
     throw new UnauthorizedError(
-      message ??
-        `Lobby#${lobby.id} can't be modified in session#${session.id}!`,
+      message ?? `Lobby#${lobby.id} can't be modified in session#${session.id}!`
     );
 }
 
@@ -29,7 +30,28 @@ export function requireLobbyJoinable(lobby: Lobby, session: SessionData) {
     throw new LockedError(`Can't join locked lobby#${lobby.id}!`);
   if (lobby.owner === session.id)
     throw new LockedError("Can't join your own lobby - you're already there!");
+  if (lobby.sessions.has(session.id)) {
+    throw new LockedError(
+      "Can't join your current lobby - you're already there!"
+    );
+  }
+  // if (session.lobbyLookup.existsBySession(session.id)) { }
+  // if (this.lobbyRepository.lobbyLookup.existsBySession(session.id))
 }
+
+// export function requireLeavableLobby(lobby: Lobby, session: SessionData) {
+//   if (lobby.isLocked)
+//     throw new LockedError(`Can't join locked lobby#${lobby.id}!`);
+//   if (lobby.owner === session.id)
+//     throw new LockedError("Can't join your own lobby - you're already there!");
+//   if (lobby.sessions.has(session.id)) {
+//     throw new LockedError(
+//       "Can't join your current lobby - you're already there!"
+//     );
+//   }
+//   // if (session.lobbyLookup.existsBySession(session.id)) { }
+//   // if (this.lobbyRepository.lobbyLookup.existsBySession(session.id))
+// }
 
 export function isLobbyVisibleTo(lobby: Lobby, session: SessionData): boolean {
   // Lobby is in a different game
@@ -54,6 +76,7 @@ export function commandToLobby(command: CommandSpec): Lobby {
     isLocked: (command.params?.indexOf("locked", 1) ?? -1) >= 0,
     isVisible: (command.params?.indexOf("hidden", 1) ?? -1) < 0,
     data: command.kvMap ?? new Map(),
+    sessions: new Map(),
     gameId: "",
     address: "",
     owner: "",

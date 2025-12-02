@@ -11,13 +11,13 @@ export class LobbyApi {
   constructor(
     private lobbyRepository: LobbyRepository,
     private lobbyService: LobbyService,
-    private metrics: () => Metrics | undefined,
+    private metrics: () => Metrics | undefined
   ) {}
 
   create(
     address: string,
     session: SessionData,
-    data?: Map<string, string>,
+    data?: Map<string, string>
   ): Lobby {
     this.logger.info({ session }, "Creating lobby");
     const lobby = this.lobbyService.create(address, data ?? new Map(), session);
@@ -41,13 +41,14 @@ export class LobbyApi {
 
   *list(
     properties: string[] | undefined,
-    session: SessionData,
+    session: SessionData
   ): Generator<Lobby> {
-    this.logger.info(
-      { session },
-      "Listing lobbies for session #%s",
-      session.id,
-    );
+    // TODO: re-enable or should this be in verbose... lol
+    // this.logger.info(
+    //   { session },
+    //   "Listing lobbies for session #%s",
+    //   session.id,
+    // );
 
     let count = 0;
     for (const lobby of this.lobbyRepository.listLobbiesFor(session)) {
@@ -55,12 +56,13 @@ export class LobbyApi {
       ++count;
     }
 
-    this.logger.info(
-      { session, count },
-      "Found %d lobbies for session #%s",
-      count,
-      session.id,
-    );
+    // TODO: re-enable
+    // this.logger.info(
+    //   { session, count },
+    //   "Found %d lobbies for session #%s",
+    //   count,
+    //   session.id
+    // );
   }
 
   delete(id: string, session: SessionData): void {
@@ -69,7 +71,7 @@ export class LobbyApi {
     if (lobby === undefined) {
       this.logger.info(
         { lobbyId: id, session },
-        "Lobby doesn't exist, doing nothing",
+        "Lobby doesn't exist, doing nothing"
       );
       return;
     }
@@ -85,6 +87,16 @@ export class LobbyApi {
     const address = this.lobbyService.join(lobby, session);
 
     this.logger.info({ session, lobby }, "Successfully joined lobby");
+    return address;
+  }
+
+  leave(id: string, session: SessionData): string {
+    this.logger.info({ session, lobbyId: id }, "Leaving lobby");
+
+    const lobby = this.lobbyRepository.requireInGame(id, session.gameId);
+    const address = this.lobbyService.leave(lobby, session);
+
+    this.logger.info({ session, lobby }, "Successfully left lobby");
     return address;
   }
 
@@ -133,6 +145,15 @@ export class LobbyApi {
     this.logger.info({ lobbyId: id, session }, "Successfully published lobby");
   }
 
+  start(id: string, session: SessionData): void {
+    this.logger.info({ lobbyId: id, session }, "Attempting to start lobby");
+
+    const lobby = this.lobbyRepository.require(id);
+    this.lobbyService.start(lobby, session);
+
+    this.logger.info({ lobbyId: id, session }, "Successfully started lobby");
+  }
+
   onSessionClose(sessionId: string): void {
     this.logger.info("Cleaning up lobbies belonging to #%s", sessionId);
     for (const lobby of this.lobbyRepository.removeLobbiesOf(sessionId)) {
@@ -143,7 +164,7 @@ export class LobbyApi {
 
   private filterProperties(
     data: Map<string, string>,
-    properties: string[] | undefined,
+    properties: string[] | undefined
   ): Map<string, string> {
     if (properties === undefined) return data;
     if (properties.length === 0) return new Map();
