@@ -159,18 +159,27 @@ export class LobbyService {
   }
 
   // NOTE: Kickoff
-  start(lobby: Lobby, session: SessionData): Lobby {
+  start(lobby: Lobby, session: SessionData): String {
     requireLobbyModifiableIn(lobby, session);
-
-    for (let current_session of lobby.sessions) {
-      // curr
-      console.log("CURR SES", current_session);
-    }
 
     // const result: Lobby = { ...lobby, isVisible: false };
     // this.repository.update(result);
     // this.eventBus.emit("lobby-change", lobby, result);
-    return lobby;
+
+    this.logger.info(
+      { session, lobby },
+      "Lobby#%s started, bound to session#%s",
+      lobby.id,
+      [...lobby.sessions.keys()].join(", ")
+    );
+
+    this.eventBus.emit(
+      "lobby-start",
+      lobby,
+      [...lobby.sessions.keys()].join(", ")
+    );
+
+    return [...lobby.sessions.keys()].join(", ");
   }
 
   private generateId(): string {

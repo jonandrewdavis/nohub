@@ -130,9 +130,11 @@ export class LobbyModule implements Module {
       .on("lobby/start", (cmd, xchg) => {
         const lobbyId = requireSingleParam(cmd, "Missing lobby ID!");
         const session = sessionOf(xchg);
+        const lobby = this.lobbyRepository.require(lobbyId);
 
         this.lobbyApi.start(lobbyId, session);
-        xchg.reply({ text: "ok" });
+        // TODO: Better serialization via Trimsock. This is a shortcut.
+        xchg.reply({ text: [...lobby.sessions.keys()].join(",") });
       })
       .on("lobby/leave", (cmd, xchg) => {
         const lobbyId = requireSingleParam(cmd, "Missing lobby ID!");

@@ -49,6 +49,17 @@ export class SessionModule implements Module {
           name: "youarehere",
           params: [xchg.source.remoteAddress],
         });
+      })
+      .on("getid", (_cmd, xchg) => {
+        xchg.reply({ text: xchg.source.data.id });
+      })
+      .on("lobby/offer", (cmd, xchg) => {
+        requireRequest(cmd);
+        const address = requireSingleParam(cmd, "Missing peer id address!");
+        const data: Map<string, string> = cmd.kvMap ?? new Map();
+        const session = sessionOf(xchg);
+
+        xchg.reply(lobbyToCommand(lobby));
       });
   }
 

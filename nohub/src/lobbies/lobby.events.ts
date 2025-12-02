@@ -5,5 +5,5 @@ export class LobbyEventBus extends TypedEventBus<{
   "lobby-create": (lobby: Lobby) => void;
   "lobby-change": (from: Lobby, to: Lobby) => void;
   "lobby-delete": (lobby: Lobby) => void;
-  "lobby-start": (lobby: Lobby) => void;
+  "lobby-start": (lobby: Lobby, peers: string) => void;
 }> {}
