@@ -11,6 +11,7 @@ import type { Module } from "./module";
 import type { SessionData } from "./sessions/session";
 import { SessionModule } from "./sessions/session.module";
 import { WebSocketModule } from "./websocket/websocket.module";
+import { BroadcastModule } from "./broadcast/broadcast.module";
 
 export type NohubReactor = BunSocketReactor<SessionData>;
 
@@ -21,6 +22,7 @@ export class NohubModules {
   readonly lobbyModule: LobbyModule;
   readonly sessionModule: SessionModule;
   readonly webSocketModule: WebSocketModule;
+  readonly broadcastModule: BroadcastModule;
 
   readonly all: Module[];
 
@@ -40,6 +42,7 @@ export class NohubModules {
       this.metricsModule.metricsHolder,
     );
     this.webSocketModule = new WebSocketModule(this.config.websocket);
+    this.broadcastModule = new BroadcastModule(this.sessionModule);
 
     this.all = [
       this.metricsModule,
@@ -47,6 +50,7 @@ export class NohubModules {
       this.lobbyModule,
       this.sessionModule,
       this.webSocketModule,
+      this.broadcastModule,
     ];
   }
 }
@@ -171,9 +175,9 @@ export class Nohub {
     if (!this.socket) return;
 
     rootLogger.info("Shutting down");
-    
+
     this.modules.webSocketModule.shutdown();
-    
+
     this.socket?.stop(true);
     rootLogger.info("Socket closed");
   }
