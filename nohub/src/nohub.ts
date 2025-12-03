@@ -12,6 +12,7 @@ import type { SessionData } from "./sessions/session";
 import { SessionModule } from "./sessions/session.module";
 import { WebSocketModule } from "./websocket/websocket.module";
 import { BroadcastModule } from "./broadcast/broadcast.module";
+import { SignalingModule } from "./signaling/signaling.module";
 
 export type NohubReactor = BunSocketReactor<SessionData>;
 
@@ -23,6 +24,7 @@ export class NohubModules {
   readonly sessionModule: SessionModule;
   readonly webSocketModule: WebSocketModule;
   readonly broadcastModule: BroadcastModule;
+  readonly signalingModule: SignalingModule;
 
   readonly all: Module[];
 
@@ -43,6 +45,10 @@ export class NohubModules {
     );
     this.webSocketModule = new WebSocketModule(this.config.websocket);
     this.broadcastModule = new BroadcastModule(this.sessionModule);
+    this.signalingModule = new SignalingModule(
+      this.lobbyModule,
+      this.broadcastModule,
+    );
 
     this.all = [
       this.metricsModule,
@@ -51,6 +57,7 @@ export class NohubModules {
       this.sessionModule,
       this.webSocketModule,
       this.broadcastModule,
+      this.signalingModule,
     ];
   }
 }
@@ -155,6 +162,7 @@ export class Nohub {
 
     rootLogger.info("Attaching %d modules...", modules.length);
     modules.forEach((it) => {
+      rootLogger.info("Attaching module %s...", it.constructor?.name);
       it.attachTo?.(this);
       this.reactor && it.configure && it.configure(this.reactor);
     });
