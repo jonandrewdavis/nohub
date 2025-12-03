@@ -2,6 +2,7 @@ import { BunSocketReactor } from "@foxssake/trimsock-bun";
 import { Command, TrimsockReader } from "@foxssake/trimsock-js";
 import type { AppConfig } from "@src/config";
 import { rootLogger } from "@src/logger";
+import { BroadcastModule } from "./broadcast/broadcast.module";
 import { UnknownCommandError } from "./errors";
 import { NohubEventBus } from "./events";
 import { GameModule } from "./games/game.module";
@@ -11,7 +12,6 @@ import type { Module } from "./module";
 import type { SessionData } from "./sessions/session";
 import { SessionModule } from "./sessions/session.module";
 import { WebSocketModule } from "./websocket/websocket.module";
-import { BroadcastModule } from "./broadcast/broadcast.module";
 import { SignalingModule } from "./signaling/signaling.module";
 
 export type NohubReactor = BunSocketReactor<SessionData>;
