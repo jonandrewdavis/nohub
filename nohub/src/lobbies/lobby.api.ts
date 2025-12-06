@@ -43,11 +43,11 @@ export class LobbyApi {
     properties: string[] | undefined,
     session: SessionData,
   ): Generator<Lobby> {
-    this.logger.info(
-      { session },
-      "Listing lobbies for session #%s",
-      session.id,
-    );
+    // this.logger.info(
+    //   { session },
+    //   "Listing lobbies for session #%s",
+    //   session.id,
+    // );
 
     let count = 0;
     for (const lobby of this.lobbyRepository.listLobbiesFor(session)) {
@@ -55,12 +55,12 @@ export class LobbyApi {
       ++count;
     }
 
-    this.logger.info(
-      { session, count },
-      "Found %d lobbies for session #%s",
-      count,
-      session.id,
-    );
+    // this.logger.info(
+    //   { session, count },
+    //   "Found %d lobbies for session #%s",
+    //   count,
+    //   session.id,
+    // );
   }
 
   delete(id: string, session: SessionData): void {
