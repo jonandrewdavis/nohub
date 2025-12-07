@@ -30,13 +30,64 @@ class_name NohubClient
 var _connection: StreamPeerTCP
 var _reactor: TrimsockTCPClientReactor
 
+signal signal_webrtc_create_new_peer_connection(id)
+signal signal_webrtc_message(type, data)
 
 ## Construct a client using the specified [param connection]
 func _init(connection: StreamPeerTCP):
 	_connection = connection
 	_connection.set_no_delay(true)
-
+	
 	_reactor = TrimsockTCPClientReactor.new(connection)
+	_setup_reactor()
+
+# Set up listening from additional reactors for WebRTC Signals
+# NOTE: Net new for broadcast listen
+# TODO: Add drop-in support.
+
+func _setup_reactor() -> void:
+	_reactor.on("info", func(_cmd, xchg: TrimsockExchange):
+		_log("[cmd] Info: trimsock.gd")
+		xchg.reply_or_send(TrimsockCommand.simple("info", "trimsock.gd"))
+	).on("whoami", func(_cmd, xchg: TrimsockExchange):
+		xchg.reply_or_send(TrimsockCommand.simple("youare", xchg.session()))
+	).on("signal/start", func(_cmd: TrimsockCommand, xchg: TrimsockExchange):
+		var players = _cmd.kv_map['players'] as String
+		for peer_id in players.split(',', false):
+			signal_webrtc_create_new_peer_connection.emit(int(peer_id.strip_edges()))
+	).on("signal/get/offer", func(_cmd, xchg: TrimsockExchange):
+		signal_webrtc_message.emit(ACTION.Offer, _cmd)
+	).on("signal/get/answer", func(_cmd, xchg: TrimsockExchange):
+		signal_webrtc_message.emit(ACTION.Answer, _cmd)
+	).on("signal/get/candidate", func(_cmd, xchg: TrimsockExchange):
+		signal_webrtc_message.emit(ACTION.Candidate, _cmd)
+	).on_unknown(func(cmd, xchg: TrimsockExchange):
+		_log("[srv] Unknown command: %s" % cmd)
+		return TrimsockCommand.error_from(cmd, "error", ["Unknown command", cmd.name])
+	)
+	
+	_reactor.on_attach.connect(func(src: StreamPeerTCP):
+		var id := _session_id()
+		_log("[srv] New connection: " + id)
+		src.set_no_delay(true)
+		
+		_reactor.set_session(src, id)
+		_reactor.send(src, TrimsockCommand.simple("ohai"))
+	)
+	
+	_reactor.on_detach.connect(func(src):
+		_log("[srv] Connection closed!")
+	)	
+
+func _log(what: String) -> void:
+	prints(what)
+	
+func _session_id(length: int = 4) -> String:
+	const charset := "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789"
+	var id := ""
+	for i in length:
+		id += charset[randi() % charset.length()]
+	return id
 
 ## Poll the client
 ## [br][br]
@@ -56,6 +107,7 @@ func set_game(id: String) -> NohubResult:
 func create_lobby(address: String, data: Dictionary = {}) -> NohubResult.Lobby:
 	var request := TrimsockCommand.request("lobby/create")\
 		.with_params([address])
+	print(data)
 	for key in data:
 		request.with_kv_pairs([TrimsockCommand.pair_of(key, data[key])])
 
@@ -160,6 +212,36 @@ func publish_lobby(lobby_id: String) -> NohubResult:
 		.with_params([lobby_id])
 	return await _bool_request(request)
 
+## Start lobby, kicking off joining
+## [br][br]
+## Only the lobby's owner can start the lobby. 
+func start_lobby(lobby_id: String) -> NohubResult.LobbyMessage:
+	var request := TrimsockCommand.request("signal/start/lobby")\
+		.with_params([lobby_id])
+
+	var xchg := _reactor.submit_request(request)
+	var response := await xchg.read()
+	
+	if response.is_success():
+		return NohubResult.LobbyMessage.of_value(response.params[0])
+	else:
+		return _command_to_error(response)
+
+## Leave the lobby
+## [br][br]
+## Only the lobby's owner can start the lobby. 
+func leave_lobby(lobby_id: String) -> NohubResult.LobbyMessage:
+	var request := TrimsockCommand.request("lobby/leave")\
+		.with_params([lobby_id])
+
+	var xchg := _reactor.submit_request(request)
+	var response := await xchg.read()
+	
+	if response.is_success():
+		return NohubResult.LobbyMessage.of_value(response.params[0])
+	else:
+		return _command_to_error(response)
+
 ## Set the lobby's custom data
 ## [br][br]
 ## Note that this method updates the data, instead of adding to it. Only the 
@@ -199,7 +281,7 @@ func _command_to_lobby(command: TrimsockCommand) -> NohubLobby:
 	lobby.is_locked = command.params.find("locked", 1) >= 0
 	lobby.is_visible = command.params.find("hidden", 1) < 0
 	lobby.data = command.kv_map
-
+	
 	return lobby
 
 func _command_to_error(command: TrimsockCommand) -> NohubResult:
@@ -207,3 +289,39 @@ func _command_to_error(command: TrimsockCommand) -> NohubResult:
 		return NohubResult.of_error(command.params[0], command.params[1])
 	else:
 		return NohubResult.of_error(command.name, "")
+		
+func get_session() -> String:
+	var request := TrimsockCommand.request("getid")
+	var xchg := _reactor.submit_request(request)
+	var response := await xchg.read()
+	if response.is_success():
+		return response.text
+	else:
+		return ""
+
+enum ACTION { 
+	Offer,
+	Answer,
+	Candidate	
+}
+
+func send_webrtc_message(type: ACTION, id: String, data: Dictionary = {}) -> NohubResult:
+	var request 
+	
+	match type:	
+		ACTION.Offer:
+			request = TrimsockCommand.request("signal/offer").with_params([id])
+		ACTION.Answer:
+			request = TrimsockCommand.request("signal/answer").with_params([id])
+		ACTION.Candidate:
+			request = TrimsockCommand.request("signal/candidate").with_params([id])
+
+	request.with_kv_map(data)
+
+	var xchg := _reactor.submit_request(request)
+	var response := await xchg.read()
+
+	if response.is_success():
+		return NohubResult.LobbyMessage.of_value('send success')
+	else:
+		return _command_to_error(response)
