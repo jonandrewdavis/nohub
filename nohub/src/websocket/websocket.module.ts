@@ -1,8 +1,8 @@
-import type { ServerWebSocket } from "bun";
 import type { WebSocketConfig } from "@src/config";
 import { rootLogger } from "@src/logger";
 import type { Module } from "@src/module";
 import type { Nohub } from "@src/nohub";
+import type { ServerWebSocket } from "bun";
 
 interface WebSocketData {
   tcpSocket: TCPSocket;
@@ -18,7 +18,7 @@ export class WebSocketModule implements Module {
 
   attachTo(app: Nohub): void {
     this.nohub = app;
-    
+
     if (!this.config.enabled) {
       this.logger.info("WebSocket proxy disabled");
       return;
@@ -32,16 +32,19 @@ export class WebSocketModule implements Module {
       throw new Error("WebSocket module not attached to nohub instance");
     }
 
-    const tcpHost = this.nohub.config.tcp.host === "*" ? "localhost" : this.nohub.config.tcp.host;
+    const tcpHost =
+      this.nohub.config.tcp.host === "*"
+        ? "localhost"
+        : this.nohub.config.tcp.host;
     const tcpPort = this.nohub.config.tcp.port;
 
     this.server = Bun.serve({
       hostname: this.config.host === "*" ? undefined : this.config.host,
       port: this.config.port,
-      
+
       fetch: async (req, server) => {
         const url = new URL(req.url);
-        
+
         if (url.pathname !== this.config.path) {
           return new Response("Not Found", { status: 404 });
         }
@@ -63,30 +66,40 @@ export class WebSocketModule implements Module {
               socket: {
                 data(socket, data) {
                   // Forward TCP data to WebSocket
-                  if (ws.readyState === 1) { // WebSocket.OPEN
+                  if (ws.readyState === 1) {
+                    // WebSocket.OPEN
                     ws.send(data);
                   }
                 },
                 error(socket, error) {
-                  rootLogger.error({ error }, "TCP socket error in WebSocket proxy");
+                  rootLogger.error(
+                    { error },
+                    "TCP socket error in WebSocket proxy",
+                  );
                   ws.close();
                 },
                 close(socket) {
-                  if (ws.readyState === 1) { // WebSocket.OPEN
+                  if (ws.readyState === 1) {
+                    // WebSocket.OPEN
                     ws.close();
                   }
-                }
-              }
+                },
+              },
             });
 
             ws.data = {
               tcpSocket,
-              buffer: []
+              buffer: [],
             };
 
-            rootLogger.debug("WebSocket client connected, TCP bridge established");
+            rootLogger.debug(
+              "WebSocket client connected, TCP bridge established",
+            );
           } catch (error) {
-            rootLogger.error({ error }, "Failed to establish TCP connection for WebSocket client");
+            rootLogger.error(
+              { error },
+              "Failed to establish TCP connection for WebSocket client",
+            );
             ws.close();
           }
         },
@@ -103,10 +116,13 @@ export class WebSocketModule implements Module {
               } else {
                 data = Buffer.from(message);
               }
-              
+
               ws.data.tcpSocket.write(data);
             } catch (error) {
-              rootLogger.error({ error }, "Failed to forward WebSocket message to TCP");
+              rootLogger.error(
+                { error },
+                "Failed to forward WebSocket message to TCP",
+              );
               ws.close();
             }
           }
@@ -133,12 +149,16 @@ export class WebSocketModule implements Module {
               // Were tearing down the socket, ignore errors
             }
           }
-        }
-      }
+        },
+      },
     });
 
-    this.logger.info("WebSocket proxy listening on %s:%d%s", 
-      this.config.host, this.config.port, this.config.path);
+    this.logger.info(
+      "WebSocket proxy listening on %s:%d%s",
+      this.config.host,
+      this.config.port,
+      this.config.path,
+    );
   }
 
   shutdown(): void {

@@ -10,51 +10,26 @@ func _is_ready() -> bool:
 	push_error("_is_ready() must be implemented by subclass")
 	return false
 
-<< << << < HEAD
 func _get_reactor() -> TrimsockReactor:
 	return _reactor
-== == == =
-
-## Construct a client using the specified [param connection]
-func _init(connection: StreamPeerTCP):
-	_connection = connection
-	_connection.set_no_delay(true)
-
-	_reactor = TrimsockTCPClientReactor.new(connection)
-	_setup_webrtc_reactor()
-
-## Poll the client
-## [br][br]
-## This will poll the underlying connection and process any incoming commands.
-func poll() -> void:
-	_reactor.poll()
->> >> >> > 1400b8c(feat: webrtcsetupreactor and signalingmodule)
 
 ## Specify the game ID used by this client
 ## [br][br]
 ## See [url=https://foxssake.github.io/nohub/understanding-nohub/concepts.html#games]Games[/url].
 func set_game(id: String) -> NohubResult:
-<< << << < HEAD
 	if not _is_ready():
 		return NohubResult.of_error("NotConnected", "Client is not connected to server")
 	
-	var request := TrimsockCommand.request("session/set-game") \
-== == == =
-	var request := TrimsockCommand.request("session/set-game") \
->> >> >> > 1400b8c(feat: webrtcsetupreactor and signalingmodule)
+	var request := TrimsockCommand.request("session/set-game")\
 		.with_params([id])
 	return await _bool_request(request)
 
 ## Create a lobby
 func create_lobby(address: String, data: Dictionary = {}) -> NohubResult.Lobby:
-<< << << < HEAD
 	if not _is_ready():
 		return NohubResult.of_error("NotConnected", "Client is not connected to server")
 	
-	var request := TrimsockCommand.request("lobby/create") \
-== == == =
-	var request := TrimsockCommand.request("lobby/create") \
->> >> >> > 1400b8c(feat: webrtcsetupreactor and signalingmodule)
+	var request := TrimsockCommand.request("lobby/create")\
 		.with_params([address])
 	for key in data:
 		request.with_kv_pairs([TrimsockCommand.pair_of(key, data[key])])
@@ -72,14 +47,10 @@ func create_lobby(address: String, data: Dictionary = {}) -> NohubResult.Lobby:
 ## If [param properties] is specified, only the listed properties will be
 ## returned from the lobby's custom data.
 func get_lobby(id: String, properties: Array[String] = []) -> NohubResult.Lobby:
-<< << << < HEAD
 	if not _is_ready():
 		return NohubResult.of_error("NotConnected", "Client is not connected to server")
 	
-	var request := TrimsockCommand.request("lobby/get") \
-== == == =
-	var request := TrimsockCommand.request("lobby/get") \
->> >> >> > 1400b8c(feat: webrtcsetupreactor and signalingmodule)
+	var request := TrimsockCommand.request("lobby/get")\
 		.with_params([id] + properties)
 	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
 	var response: TrimsockCommand = await xchg.read()
@@ -98,7 +69,7 @@ func list_lobbies(properties: Array[String] = []) -> NohubResult.LobbyList:
 		return NohubResult.of_error("NotConnected", "Client is not connected to server")
 	
 	var result := [] as Array[NohubLobby]
-	var request := TrimsockCommand.request("lobby/list") \
+	var request := TrimsockCommand.request("lobby/list")\
 		.with_params(properties)
 
 	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
@@ -118,14 +89,10 @@ func list_lobbies(properties: Array[String] = []) -> NohubResult.LobbyList:
 ## [br][br]
 ## Only the lobby's owner can delete the lobby.
 func delete_lobby(lobby_id: String) -> NohubResult:
-<< << << < HEAD
 	if not _is_ready():
 		return NohubResult.of_error("NotConnected", "Client is not connected to server")
 	
-	var request := TrimsockCommand.request("lobby/delete") \
-== == == =
-	var request := TrimsockCommand.request("lobby/delete") \
->> >> >> > 1400b8c(feat: webrtcsetupreactor and signalingmodule)
+	var request := TrimsockCommand.request("lobby/delete")\
 		.with_params([lobby_id])
 	return await _bool_request(request)
 
@@ -134,14 +101,10 @@ func delete_lobby(lobby_id: String) -> NohubResult:
 ## The response will contain the lobby's address. This string can be used to
 ## connect.
 func join_lobby(lobby_id: String) -> NohubResult.Address:
-<< << << < HEAD
 	if not _is_ready():
 		return NohubResult.of_error("NotConnected", "Client is not connected to server")
 	
-	var request := TrimsockCommand.request("lobby/join") \
-== == == =
-	var request := TrimsockCommand.request("lobby/join") \
->> >> >> > 1400b8c(feat: webrtcsetupreactor and signalingmodule)
+	var request := TrimsockCommand.request("lobby/join")\
 		.with_params([lobby_id])
 
 	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
@@ -156,14 +119,10 @@ func join_lobby(lobby_id: String) -> NohubResult.Address:
 ## [br][br]
 ## Only the lobby's owner can lock the lobby.
 func lock_lobby(lobby_id: String) -> NohubResult:
-<< << << < HEAD
 	if not _is_ready():
 		return NohubResult.of_error("NotConnected", "Client is not connected to server")
 	
-	var request := TrimsockCommand.request("lobby/lock") \
-== == == =
-	var request := TrimsockCommand.request("lobby/lock") \
->> >> >> > 1400b8c(feat: webrtcsetupreactor and signalingmodule)
+	var request := TrimsockCommand.request("lobby/lock")\
 		.with_params([lobby_id])
 	return await _bool_request(request)
 
@@ -171,14 +130,10 @@ func lock_lobby(lobby_id: String) -> NohubResult:
 ## [br][br]
 ## Only the lobby's owner can unlock the lobby. Lobbies are unlocked by default.
 func unlock_lobby(lobby_id: String) -> NohubResult:
-<< << << < HEAD
 	if not _is_ready():
 		return NohubResult.of_error("NotConnected", "Client is not connected to server")
 	
-	var request := TrimsockCommand.request("lobby/unlock") \
-== == == =
-	var request := TrimsockCommand.request("lobby/unlock") \
->> >> >> > 1400b8c(feat: webrtcsetupreactor and signalingmodule)
+	var request := TrimsockCommand.request("lobby/unlock")\
 		.with_params([lobby_id])
 	return await _bool_request(request)
 
@@ -186,14 +141,10 @@ func unlock_lobby(lobby_id: String) -> NohubResult:
 ## [br][br]
 ## Only the lobby's owner can hide the lobby.
 func hide_lobby(lobby_id: String) -> NohubResult:
-<< << << < HEAD
 	if not _is_ready():
 		return NohubResult.of_error("NotConnected", "Client is not connected to server")
 	
-	var request := TrimsockCommand.request("lobby/hide") \
-== == == =
-	var request := TrimsockCommand.request("lobby/hide") \
->> >> >> > 1400b8c(feat: webrtcsetupreactor and signalingmodule)
+	var request := TrimsockCommand.request("lobby/hide")\
 		.with_params([lobby_id])
 	return await _bool_request(request)
 
@@ -201,14 +152,10 @@ func hide_lobby(lobby_id: String) -> NohubResult:
 ## [br][br]
 ## Only the lobby's owner can hide the lobby. Lobbies are visible by default.
 func publish_lobby(lobby_id: String) -> NohubResult:
-<< << << < HEAD
 	if not _is_ready():
 		return NohubResult.of_error("NotConnected", "Client is not connected to server")
 	
-	var request := TrimsockCommand.request("lobby/publish") \
-== == == =
-	var request := TrimsockCommand.request("lobby/publish") \
->> >> >> > 1400b8c(feat: webrtcsetupreactor and signalingmodule)
+	var request := TrimsockCommand.request("lobby/publish")\
 		.with_params([lobby_id])
 	return await _bool_request(request)
 
@@ -217,16 +164,11 @@ func publish_lobby(lobby_id: String) -> NohubResult:
 ## Note that this method updates the data, instead of adding to it. Only the 
 ## lobby's owner can update the lobby's custom data.
 func set_lobby_data(lobby_id: String, data: Dictionary) -> NohubResult:
-<< << << < HEAD
 	if not _is_ready():
 		return NohubResult.of_error("NotConnected", "Client is not connected to server")
 	
-	var request := TrimsockCommand.request("lobby/set-data") \
-		.with_params([lobby_id]) \
-== == == =
-	var request := TrimsockCommand.request("lobby/set-data") \
-		.with_params([lobby_id]) \
->> >> >> > 1400b8c(feat: webrtcsetupreactor and signalingmodule)
+	var request := TrimsockCommand.request("lobby/set-data")\
+		.with_params([lobby_id])\
 		.with_kv_map(data)
 	return await _bool_request(request)
 
@@ -270,6 +212,9 @@ func _command_to_error(command: TrimsockCommand) -> NohubResult:
 	else:
 		return NohubResult.of_error(command.name, "")
 
+
+
+
 #region WebRTC
 
 # TODO: Determine the best place to define these signals. They are used in the browser
@@ -283,7 +228,7 @@ signal signal_webrtc_message(type, data)
 ## NOTE: This function is based on the _setup_reactor example in this file:
 ## https://github.com/foxssake/trimsock/blob/main/trimsock.gd/examples/server/server.gd
 func _setup_webrtc_reactor() -> void:
-	_reactor.on("webrtc/start", func(_cmd: TrimsockCommand, xchg: TrimsockExchange):
+	_get_reactor().on("webrtc/start", func(_cmd: TrimsockCommand, xchg: TrimsockExchange):
 		var players = _cmd.kv_map['players'] as String
 		for peer_id in players.split(',', false):
 			signal_webrtc_create_new_peer_connection.emit(int(peer_id.strip_edges()))
@@ -299,16 +244,16 @@ func _setup_webrtc_reactor() -> void:
 	)
 
 	# TODO: Necessary?
-	_reactor.on_attach.connect(func(src: StreamPeerTCP):
+	_get_reactor().on_attach.connect(func(src: StreamPeerTCP):
 		var id := _session_id()
 		_log("[srv] New connection: " + id)
 		src.set_no_delay(true)
 
-		_reactor.set_session(src, id)
-		_reactor.send(src, TrimsockCommand.simple("ohai"))
+		_get_reactor().set_session(src, id)
+		_get_reactor().send(src, TrimsockCommand.simple("ohai"))
 	)
 
-	_reactor.on_detach.connect(func(src):
+	_get_reactor().on_detach.connect(func(src):
 		_log("[srv] Connection closed!")
 	)
 
@@ -330,7 +275,7 @@ func start_lobby(lobby_id: String) -> NohubResult.LobbyMessage:
 	var request := TrimsockCommand.request("webrtc/lobby/start") \
 		.with_params([lobby_id])
 
-	var xchg := _reactor.submit_request(request)
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
 	var response := await xchg.read()
 
 	if response.is_success():
@@ -344,7 +289,7 @@ func leave_lobby(lobby_id: String) -> NohubResult.LobbyMessage:
 	var request := TrimsockCommand.request("lobby/leave") \
 		.with_params([lobby_id])
 
-	var xchg := _reactor.submit_request(request)
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
 	var response := await xchg.read()
 
 	if response.is_success():
@@ -354,7 +299,7 @@ func leave_lobby(lobby_id: String) -> NohubResult.LobbyMessage:
 
 func get_session() -> String:
 	var request := TrimsockCommand.request("getid")
-	var xchg := _reactor.submit_request(request)
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
 	var response := await xchg.read()
 	if response.is_success():
 		return response.text
@@ -380,7 +325,7 @@ func send_webrtc_message(type: WEBRTC_ACTION, id: String, data: Dictionary = {})
 
 	request.with_kv_map(data)
 
-	var xchg := _reactor.submit_request(request)
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
 	var response := await xchg.read()
 
 	if response.is_success():

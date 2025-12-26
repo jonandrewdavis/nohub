@@ -34,6 +34,7 @@ var _is_connected: bool = false
 func _init():
 	_socket = WebSocketPeer.new()
 	_reactor = TrimsockWSClientReactor.new(_socket)
+	_setup_webrtc_reactor()
 
 ## Connect to the nohub WebSocket proxy server
 ## [br][br]

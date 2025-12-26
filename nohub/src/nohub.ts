@@ -11,8 +11,8 @@ import { MetricsModule } from "./metrics/metrics.module";
 import type { Module } from "./module";
 import type { SessionData } from "./sessions/session";
 import { SessionModule } from "./sessions/session.module";
-import { WebSocketModule } from "./websocket/websocket.module";
 import { SignalingModule } from "./signaling/signaling.module";
+import { WebSocketModule } from "./websocket/websocket.module";
 
 export type NohubReactor = BunSocketReactor<SessionData>;
 
@@ -104,6 +104,7 @@ export class Nohub {
       });
 
     const modules = this.modules.all;
+
     this.socket = this.reactor.listen({
       hostname: this.config.tcp.host,
       port: this.config.tcp.port,
