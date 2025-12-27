@@ -79,7 +79,7 @@ func _process(dt: float) -> void:
 			_last_list = time
 
 func _connect() -> void:
-	var host := \"0.0.0.0\"
+	var host := \"3.234.154.106\"
 	var ws_port := 9982
 	var ws_url := \"ws://%s:%d/ws\" % [host, ws_port]
 
