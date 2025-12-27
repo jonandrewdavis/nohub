@@ -212,53 +212,11 @@ func _command_to_error(command: TrimsockCommand) -> NohubResult:
 	else:
 		return NohubResult.of_error(command.name, "")
 
-
-
-
 #region WebRTC
 
 # TODO: Determine the best place to define these signals. They are used in the browser
 signal signal_webrtc_create_new_peer_connection(id)
 signal signal_webrtc_message(type, data)
-
-## Setup the events for negotiating WebRTC connections using the signalling module
-## [br][br]
-## When a lobby host starts a lobby (or a peer asks for an offer, answer, or candidate):
-## these events will emit signals that the clients use to initialize WebRTC peer connections
-## NOTE: This function is based on the _setup_reactor example in this file:
-## https://github.com/foxssake/trimsock/blob/main/trimsock.gd/examples/server/server.gd
-func _setup_webrtc_reactor() -> void:
-	_get_reactor().on("webrtc/start", func(_cmd: TrimsockCommand, xchg: TrimsockExchange):
-		var players = _cmd.kv_map['players'] as String
-		for peer_id in players.split(',', false):
-			signal_webrtc_create_new_peer_connection.emit(int(peer_id.strip_edges()))
-	).on("webrtc/get/offer", func(_cmd, xchg: TrimsockExchange):
-		signal_webrtc_message.emit(WEBRTC_ACTION.Offer, _cmd)
-	).on("webrtc/get/answer", func(_cmd, xchg: TrimsockExchange):
-		signal_webrtc_message.emit(WEBRTC_ACTION.Answer, _cmd)
-	).on("webrtc/get/candidate", func(_cmd, xchg: TrimsockExchange):
-		signal_webrtc_message.emit(WEBRTC_ACTION.Candidate, _cmd)
-	).on_unknown(func(cmd, xchg: TrimsockExchange):
-		_log("[srv] Unknown command: %s" % cmd)
-		return TrimsockCommand.error_from(cmd, "error", ["Unknown command", cmd.name])
-	)
-
-	# TODO: Necessary?
-	_get_reactor().on_attach.connect(func(src: StreamPeerTCP):
-		var id := _session_id()
-		_log("[srv] New connection: " + id)
-		src.set_no_delay(true)
-
-		_get_reactor().set_session(src, id)
-		_get_reactor().send(src, TrimsockCommand.simple("ohai"))
-	)
-
-	_get_reactor().on_detach.connect(func(src):
-		_log("[srv] Connection closed!")
-	)
-
-func _log(what: String) -> void:
-	prints(what)
 
 func _session_id(length: int = 4) -> String:
 	const charset := "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789"

@@ -32,7 +32,6 @@ var _connection: StreamPeerTCP
 func _init(connection: StreamPeerTCP):
 	_connection = connection
 	_connection.set_no_delay(true)
-	_setup_webrtc_reactor()
 	_reactor = TrimsockTCPClientReactor.new(connection)
 
 	

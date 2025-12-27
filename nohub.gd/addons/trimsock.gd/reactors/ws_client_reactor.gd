@@ -7,6 +7,7 @@ func _init(socket: WebSocketPeer):
 	_socket = socket
 	attach(_socket)
 
+
 func submit(command: TrimsockCommand) -> TrimsockExchange:
 	return send(_socket, command)
 

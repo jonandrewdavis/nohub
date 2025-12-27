@@ -34,6 +34,20 @@ var _is_connected: bool = false
 func _init():
 	_socket = WebSocketPeer.new()
 	_reactor = TrimsockWSClientReactor.new(_socket)
+	_reactor.on("webrtc/start", func(_cmd: TrimsockCommand, xchg: TrimsockExchange):
+		var players = _cmd.kv_map['players'] as String
+		for peer_id in players.split(',', false):
+			signal_webrtc_create_new_peer_connection.emit(int(peer_id.strip_edges()))
+	).on("webrtc/get/offer", func(_cmd, xchg: TrimsockExchange):
+		signal_webrtc_message.emit(WEBRTC_ACTION.Offer, _cmd)
+	).on("webrtc/get/answer", func(_cmd, xchg: TrimsockExchange):
+		signal_webrtc_message.emit(WEBRTC_ACTION.Answer, _cmd)
+	).on("webrtc/get/candidate", func(_cmd, xchg: TrimsockExchange):
+		signal_webrtc_message.emit(WEBRTC_ACTION.Candidate, _cmd)
+	).on_unknown(func(cmd, xchg: TrimsockExchange):
+		print("[srv] Unknown command: %s" % cmd)
+		return TrimsockCommand.error_from(cmd, "error", ["Unknown command", cmd.name])
+	)
 
 
 ## Connect to the nohub WebSocket proxy server

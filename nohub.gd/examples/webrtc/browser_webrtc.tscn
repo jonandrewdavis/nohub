@@ -68,6 +68,7 @@ func _process(dt: float) -> void:
 				address_label.text = \"...\"
 				var ip := await _get_ip()
 				address_label.text = ip
+
 		else:
 			status_label.text = \"Disconnected\"
 		
@@ -85,10 +86,16 @@ func _connect() -> void:
 	print(\"Connecting to nohub WebSocket at %s\" % ws_url)
 
 	_client = NohubWebSocketClient.new()
+	
 	var connect_result := await _client.connect_to(ws_url)
+
+
+	_get_session_id()
+
 	if not connect_result.is_success():
 		popup(\"Couldn't connect to nohub at %s - %s\" % [ws_url, connect_result.error()])
 		return
+
 
 
 
@@ -274,7 +281,6 @@ func _update_list() -> void:
 		return
 
 	var lobbies := response.value()
-	print(\"Received lobbies: %s\" % [lobbies])
 
 	lobby_list.clear()
 
@@ -341,7 +347,7 @@ func start_web_rtc(id: String):
 	web_rtc_peer = WebRTCMultiplayerPeer.new()
 	web_rtc_peer.create_mesh(int(id))
 	multiplayer.multiplayer_peer = web_rtc_peer
-	prints('HECK:', id)
+
 	
 	multiplayer.peer_connected.connect(func(id): print(\"Add player: \", id))
 	multiplayer.peer_disconnected.connect(func(id): print(\"Remove player: \", id))
