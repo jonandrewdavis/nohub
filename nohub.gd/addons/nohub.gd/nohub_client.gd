@@ -1,66 +1,41 @@
-extends RefCounted
 class_name NohubClient
 
-## Nohub client implementation
-##
-## This class provides access to all the functionality implemented in nohub. 
-## This is done via a TCP connection. To use this client, establish a connection
-## to the desired nohub server using [StreamPeerTCP], and instantiate the
-## client.
-## [br][br]
-## Make sure to regularly poll the client using [method poll]. Otherwise, client
-## calls will never return.
-## [br][br]
-## Every operation returns a [NohubResult]. If the operation is successful, the
-## result object contains the data returned by nohub. Otherwise, the result will
-## contain the error. This results in calls like this:
-## [codeblock]
-## var result := await nohub_client.list_lobbies()
-## if result.is_success():
-##     var lobbies := result.value()
-##     # ...
-## else:
-##     push_error(result.error())
-## [/codeblock]
-##
-## @tutorial(Getting started): https://foxssake.github.io/nohub/getting-started/using-nohub.html#with-godot
-## @tutorial(Understanding nohub): https://foxssake.github.io/nohub/understanding-nohub/index.html
+## Base class for nohub clients
+## This class provides the common interface for nohub clients.
+## Specific implementations should extend this class and implement the required methods.
 
+var _reactor: TrimsockReactor
 
-var _connection: StreamPeerTCP
-var _reactor: TrimsockTCPClientReactor
+func _is_ready() -> bool:
+	push_error("_is_ready() must be implemented by subclass")
+	return false
 
-
-## Construct a client using the specified [param connection]
-func _init(connection: StreamPeerTCP):
-	_connection = connection
-	_connection.set_no_delay(true)
-
-	_reactor = TrimsockTCPClientReactor.new(connection)
-
-## Poll the client
-## [br][br]
-## This will poll the underlying connection and process any incoming commands.
-func poll() -> void:
-	_reactor.poll()
+func _get_reactor() -> TrimsockReactor:
+	return _reactor
 
 ## Specify the game ID used by this client
 ## [br][br]
 ## See [url=https://foxssake.github.io/nohub/understanding-nohub/concepts.html#games]Games[/url].
 func set_game(id: String) -> NohubResult:
+	if not _is_ready():
+		return NohubResult.of_error("NotConnected", "Client is not connected to server")
+	
 	var request := TrimsockCommand.request("session/set-game")\
 		.with_params([id])
 	return await _bool_request(request)
 
 ## Create a lobby
 func create_lobby(address: String, data: Dictionary = {}) -> NohubResult.Lobby:
+	if not _is_ready():
+		return NohubResult.of_error("NotConnected", "Client is not connected to server")
+	
 	var request := TrimsockCommand.request("lobby/create")\
 		.with_params([address])
 	for key in data:
 		request.with_kv_pairs([TrimsockCommand.pair_of(key, data[key])])
 
-	var xchg := _reactor.submit_request(request)
-	var response := await xchg.read()
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
+	var response: TrimsockCommand = await xchg.read()
 
 	if response.is_success():
 		return NohubResult.Lobby.of_value(_command_to_lobby(response))
@@ -72,10 +47,13 @@ func create_lobby(address: String, data: Dictionary = {}) -> NohubResult.Lobby:
 ## If [param properties] is specified, only the listed properties will be
 ## returned from the lobby's custom data.
 func get_lobby(id: String, properties: Array[String] = []) -> NohubResult.Lobby:
+	if not _is_ready():
+		return NohubResult.of_error("NotConnected", "Client is not connected to server")
+	
 	var request := TrimsockCommand.request("lobby/get")\
 		.with_params([id] + properties)
-	var xchg := _reactor.submit_request(request)
-	var response := await xchg.read()
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
+	var response: TrimsockCommand = await xchg.read()
 
 	if response.is_success():
 		return NohubResult.Lobby.of_value(_command_to_lobby(response))
@@ -87,27 +65,33 @@ func get_lobby(id: String, properties: Array[String] = []) -> NohubResult.Lobby:
 ## If [param properties] is specified, only the listed properties will be
 ## returned from the lobby's custom data.
 func list_lobbies(properties: Array[String] = []) -> NohubResult.LobbyList:
+	if not _is_ready():
+		return NohubResult.of_error("NotConnected", "Client is not connected to server")
+	
 	var result := [] as Array[NohubLobby]
 	var request := TrimsockCommand.request("lobby/list")\
 		.with_params(properties)
 
-	var xchg := _reactor.submit_request(request)
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
 	while xchg.is_open():
-		var cmd := await xchg.read()
+		var cmd: TrimsockCommand = await xchg.read()
 
 		if cmd.is_error():
 			return _command_to_error(cmd)
 		if not cmd.is_stream_chunk():
 			continue
 
-		result.append(_command_to_lobby(cmd))
-	
+		result.push_back(_command_to_lobby(cmd))
+
 	return NohubResult.LobbyList.of_value(result)
 
 ## Delete a lobby using its ID
 ## [br][br]
 ## Only the lobby's owner can delete the lobby.
 func delete_lobby(lobby_id: String) -> NohubResult:
+	if not _is_ready():
+		return NohubResult.of_error("NotConnected", "Client is not connected to server")
+	
 	var request := TrimsockCommand.request("lobby/delete")\
 		.with_params([lobby_id])
 	return await _bool_request(request)
@@ -117,11 +101,14 @@ func delete_lobby(lobby_id: String) -> NohubResult:
 ## The response will contain the lobby's address. This string can be used to
 ## connect.
 func join_lobby(lobby_id: String) -> NohubResult.Address:
+	if not _is_ready():
+		return NohubResult.of_error("NotConnected", "Client is not connected to server")
+	
 	var request := TrimsockCommand.request("lobby/join")\
 		.with_params([lobby_id])
 
-	var xchg := _reactor.submit_request(request)
-	var response := await xchg.read()
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
+	var response: TrimsockCommand = await xchg.read()
 	
 	if response.is_success():
 		return NohubResult.Address.of_value(response.params[0])
@@ -132,6 +119,9 @@ func join_lobby(lobby_id: String) -> NohubResult.Address:
 ## [br][br]
 ## Only the lobby's owner can lock the lobby.
 func lock_lobby(lobby_id: String) -> NohubResult:
+	if not _is_ready():
+		return NohubResult.of_error("NotConnected", "Client is not connected to server")
+	
 	var request := TrimsockCommand.request("lobby/lock")\
 		.with_params([lobby_id])
 	return await _bool_request(request)
@@ -140,6 +130,9 @@ func lock_lobby(lobby_id: String) -> NohubResult:
 ## [br][br]
 ## Only the lobby's owner can unlock the lobby. Lobbies are unlocked by default.
 func unlock_lobby(lobby_id: String) -> NohubResult:
+	if not _is_ready():
+		return NohubResult.of_error("NotConnected", "Client is not connected to server")
+	
 	var request := TrimsockCommand.request("lobby/unlock")\
 		.with_params([lobby_id])
 	return await _bool_request(request)
@@ -148,6 +141,9 @@ func unlock_lobby(lobby_id: String) -> NohubResult:
 ## [br][br]
 ## Only the lobby's owner can hide the lobby.
 func hide_lobby(lobby_id: String) -> NohubResult:
+	if not _is_ready():
+		return NohubResult.of_error("NotConnected", "Client is not connected to server")
+	
 	var request := TrimsockCommand.request("lobby/hide")\
 		.with_params([lobby_id])
 	return await _bool_request(request)
@@ -156,6 +152,9 @@ func hide_lobby(lobby_id: String) -> NohubResult:
 ## [br][br]
 ## Only the lobby's owner can hide the lobby. Lobbies are visible by default.
 func publish_lobby(lobby_id: String) -> NohubResult:
+	if not _is_ready():
+		return NohubResult.of_error("NotConnected", "Client is not connected to server")
+	
 	var request := TrimsockCommand.request("lobby/publish")\
 		.with_params([lobby_id])
 	return await _bool_request(request)
@@ -165,6 +164,9 @@ func publish_lobby(lobby_id: String) -> NohubResult:
 ## Note that this method updates the data, instead of adding to it. Only the 
 ## lobby's owner can update the lobby's custom data.
 func set_lobby_data(lobby_id: String, data: Dictionary) -> NohubResult:
+	if not _is_ready():
+		return NohubResult.of_error("NotConnected", "Client is not connected to server")
+	
 	var request := TrimsockCommand.request("lobby/set-data")\
 		.with_params([lobby_id])\
 		.with_kv_map(data)
@@ -176,9 +178,12 @@ func set_lobby_data(lobby_id: String, data: Dictionary) -> NohubResult:
 ## on its configuration, the server might not be able to return a useful address
 ## - e.g. when running from Docker using a bridge network.
 func whereami() -> String:
+	if not _is_ready():
+		return ""
+	
 	var request := TrimsockCommand.request("whereami")
-	var xchg := _reactor.submit_request(request)
-	var response := await xchg.read()
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
+	var response: TrimsockCommand = await xchg.read()
 	
 	if response.is_success():
 		return response.text
@@ -186,8 +191,8 @@ func whereami() -> String:
 		return ""
 
 func _bool_request(request: TrimsockCommand) -> NohubResult:
-	var xchg := _reactor.submit_request(request)
-	var response := await xchg.read()
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
+	var response: TrimsockCommand = await xchg.read()
 	if response.is_success():
 		return NohubResult.of_success()
 	else:
@@ -199,7 +204,6 @@ func _command_to_lobby(command: TrimsockCommand) -> NohubLobby:
 	lobby.is_locked = command.params.find("locked", 1) >= 0
 	lobby.is_visible = command.params.find("hidden", 1) < 0
 	lobby.data = command.kv_map
-
 	return lobby
 
 func _command_to_error(command: TrimsockCommand) -> NohubResult:
@@ -207,3 +211,84 @@ func _command_to_error(command: TrimsockCommand) -> NohubResult:
 		return NohubResult.of_error(command.params[0], command.params[1])
 	else:
 		return NohubResult.of_error(command.name, "")
+
+#region WebRTC
+
+# TODO: Determine the best place to define these signals. They are used in the browser
+signal signal_webrtc_create_new_peer_connection(id)
+signal signal_webrtc_message(type, data)
+
+func _session_id(length: int = 4) -> String:
+	const charset := "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "0123456789"
+	var id := ""
+	for i in length:
+		id += charset[randi() % charset.length()]
+	return id
+
+
+## Start lobby, kicking off joining
+## [br][br]
+## Only the lobby's owner can start the lobby. 
+func start_lobby(lobby_id: String) -> NohubResult.LobbyMessage:
+	var request := TrimsockCommand.request("webrtc/lobby/start") \
+		.with_params([lobby_id])
+
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
+	var response := await xchg.read()
+
+	if response.is_success():
+		return NohubResult.LobbyMessage.of_value(response.params[0])
+	else:
+		return _command_to_error(response)
+
+## Leave the lobby
+## [br][br]
+func leave_lobby(lobby_id: String) -> NohubResult.LobbyMessage:
+	var request := TrimsockCommand.request("lobby/leave") \
+		.with_params([lobby_id])
+
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
+	var response := await xchg.read()
+
+	if response.is_success():
+		return NohubResult.LobbyMessage.of_value(response.params[0])
+	else:
+		return _command_to_error(response)
+
+func get_session() -> String:
+	var request := TrimsockCommand.request("getid")
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
+	var response := await xchg.read()
+	if response.is_success():
+		return response.text
+	else:
+		return ""
+
+enum WEBRTC_ACTION {
+	Offer,
+	Answer,
+	Candidate
+}
+
+func send_webrtc_message(type: WEBRTC_ACTION, id: String, data: Dictionary = {}) -> NohubResult:
+	var request
+
+	match type:
+		WEBRTC_ACTION.Offer:
+			request = TrimsockCommand.request("webrtc/offer").with_params([id])
+		WEBRTC_ACTION.Answer:
+			request = TrimsockCommand.request("webrtc/answer").with_params([id])
+		WEBRTC_ACTION.Candidate:
+			request = TrimsockCommand.request("webrtc/candidate").with_params([id])
+
+	request.with_kv_map(data)
+
+	var xchg: TrimsockExchange = _get_reactor().submit_request(request)
+	var response := await xchg.read()
+
+	if response.is_success():
+		return NohubResult.LobbyMessage.of_value('send success')
+	else:
+		return _command_to_error(response)
+
+#endregion

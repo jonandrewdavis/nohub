@@ -2,6 +2,7 @@ import { BunSocketReactor } from "@foxssake/trimsock-bun";
 import { Command, TrimsockReader } from "@foxssake/trimsock-js";
 import type { AppConfig } from "@src/config";
 import { rootLogger } from "@src/logger";
+import { BroadcastModule } from "./broadcast/broadcast.module";
 import { UnknownCommandError } from "./errors";
 import { NohubEventBus } from "./events";
 import { GameModule } from "./games/game.module";
@@ -10,6 +11,8 @@ import { MetricsModule } from "./metrics/metrics.module";
 import type { Module } from "./module";
 import type { SessionData } from "./sessions/session";
 import { SessionModule } from "./sessions/session.module";
+import { SignalingModule } from "./signaling/signaling.module";
+import { WebSocketModule } from "./websocket/websocket.module";
 
 export type NohubReactor = BunSocketReactor<SessionData>;
 
@@ -19,6 +22,9 @@ export class NohubModules {
   readonly gameModule: GameModule;
   readonly lobbyModule: LobbyModule;
   readonly sessionModule: SessionModule;
+  readonly webSocketModule: WebSocketModule;
+  readonly broadcastModule: BroadcastModule;
+  readonly signalingModule: SignalingModule;
 
   readonly all: Module[];
 
@@ -37,12 +43,21 @@ export class NohubModules {
       config.sessions,
       this.metricsModule.metricsHolder,
     );
+    this.webSocketModule = new WebSocketModule(this.config.websocket);
+    this.broadcastModule = new BroadcastModule(this.sessionModule);
+    this.signalingModule = new SignalingModule(
+      this.lobbyModule,
+      this.broadcastModule,
+    );
 
     this.all = [
       this.metricsModule,
       this.gameModule,
       this.lobbyModule,
       this.sessionModule,
+      this.webSocketModule,
+      this.broadcastModule,
+      this.signalingModule,
     ];
   }
 }
@@ -89,6 +104,7 @@ export class Nohub {
       });
 
     const modules = this.modules.all;
+
     this.socket = this.reactor.listen({
       hostname: this.config.tcp.host,
       port: this.config.tcp.port,
@@ -147,6 +163,7 @@ export class Nohub {
 
     rootLogger.info("Attaching %d modules...", modules.length);
     modules.forEach((it) => {
+      rootLogger.info("Attaching module %s...", it.constructor?.name);
       it.attachTo?.(this);
       this.reactor && it.configure && it.configure(this.reactor);
     });
@@ -167,6 +184,9 @@ export class Nohub {
     if (!this.socket) return;
 
     rootLogger.info("Shutting down");
+
+    this.modules.webSocketModule.shutdown();
+
     this.socket?.stop(true);
     rootLogger.info("Socket closed");
   }
