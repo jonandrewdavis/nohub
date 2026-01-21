@@ -25,7 +25,7 @@ export class SessionApi {
 
   generateSessionId(): string {
     if (this.config.idUseNumber) {
-      const nanoidNumber = customAlphabet("1234567890");
+      const nanoidNumber = customAlphabet("123456789");
       return nanoidNumber(this.config.idLength);
     }
     return nanoid(this.config.idLength);

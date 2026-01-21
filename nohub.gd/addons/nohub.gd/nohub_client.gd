@@ -185,6 +185,44 @@ func whereami() -> String:
 	else:
 		return ""
 
+## Start lobby, kicking off the game
+## [br][br]
+## Only the lobby's owner can start the lobby.
+func start_lobby(lobby_id: String) -> NohubResult.LobbyMessage:
+	var request := TrimsockCommand.request("webrtc/lobby/start") \
+		.with_params([lobby_id])
+
+	var xchg := _reactor.submit_request(request)
+	var response := await xchg.read()
+
+	if response.is_success():
+		return NohubResult.LobbyMessage.of_value(response.params[0])
+	else:
+		return _command_to_error(response)
+
+## Leave the lobby
+func leave_lobby(lobby_id: String) -> NohubResult.LobbyMessage:
+	var request := TrimsockCommand.request("lobby/leave") \
+		.with_params([lobby_id])
+
+	var xchg := _reactor.submit_request(request)
+	var response := await xchg.read()
+
+	if response.is_success():
+		return NohubResult.LobbyMessage.of_value(response.params[0])
+	else:
+		return _command_to_error(response)
+
+## Get the current session
+func get_session() -> String:
+	var request := TrimsockCommand.request("getid")
+	var xchg := _reactor.submit_request(request)
+	var response := await xchg.read()
+	if response.is_success():
+		return response.text
+	else:
+		return ""
+
 func _bool_request(request: TrimsockCommand) -> NohubResult:
 	var xchg := _reactor.submit_request(request)
 	var response := await xchg.read()
@@ -207,3 +245,5 @@ func _command_to_error(command: TrimsockCommand) -> NohubResult:
 		return NohubResult.of_error(command.params[0], command.params[1])
 	else:
 		return NohubResult.of_error(command.name, "")
+
+
